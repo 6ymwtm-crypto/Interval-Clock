@@ -330,7 +330,7 @@ let baseCtx = 0;          // 予約の基準（AudioContext時計）
 function pad2(n) { return String(n).padStart(2, '0'); }
 
 function voiceNames() {
-  const names = ['jodo', 'desu'];
+  const names = ['jodo'];
   for (let h = 1; h <= 12; h++) names.push('h' + pad2(h));
   for (let m = 1; m <= 59; m++) names.push('m' + pad2(m));
   return names;
@@ -380,7 +380,7 @@ function phraseNames(d) {
   const h12 = (d.getHours() % 12) || 12;
   const m = d.getMinutes();
   if (m === 0) return ['h' + pad2(h12), 'jodo'];
-  return ['h' + pad2(h12), 'm' + pad2(m), 'desu'];
+  return ['h' + pad2(h12), 'm' + pad2(m)];
 }
 
 // 指定時刻から音声を連結して再生予約し、使ったソースを返す
