@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>時計</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+#forceBg {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: -1;
+}
+
+html, body {
+  background: #000 !important;
+  color: #fff;
+  width: 100%;
+  min-height: 100vh;
+  font-family: 'Zen Kaku Gothic New', -apple-system, sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===============================
+   時計エリア
+=============================== */
+#clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 4vw 3vw 2vw;
+  width: 100%;
+}
+
+@media (orientation: landscape) {
+  #clock {
+    min-height: 100vh;
+    height: 100vh;
+    padding: 2vh 4vw;
+  }
+}
+
+#timeDisplay {
+  font-family: 'Zen Kaku Gothic New', monospace;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  line-height: 1;
+  width: 100%;
+  text-align: center;
+  font-size: 10px;
+}
+
+#secDisplay {
+  font-family: 'Zen Kaku Gothic New', monospace;
+  font-weight: 700;
+  color: #444;
+  white-space: nowrap;
+  line-height: 1;
+  margin-top: 0.25em;
+  font-size: 10px;
+  text-align: center;
+}
+
+#dateDisplay {
+  color: #444;
+  margin-top: 0.5em;
+  font-size: clamp(0.7rem, 2.5vw, 1rem);
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+/* ===============================
+   設定エリア
+=============================== */
+.divider {
+  border: none;
+  border-top: 1px solid #1e1e1e;
+  width: 92%;
+  margin: 0 auto;
+}
+
+#controls {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 5vw 6vw 4vw;
+  display: flex;
+  flex-direction: column;
+  gap: 4vw;
+}
+
+@media (orientation: landscape) {
+  #controls {
+    padding: 5vh 6vw 3vh;
+    gap: 3vh;
+    max-width: 480px;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lbl {
+  font-size: clamp(0.72rem, 3vw, 0.9rem);
+  color: #555;
+  white-space: nowrap;
+}
+
+.pills { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: flex-end; }
+.pill {
+  padding: 0.28rem 0.75rem;
+  border: 1px solid #2a2a2a;
+  background: #000;
+  color: #555;
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  font-size: clamp(0.65rem, 2.5vw, 0.82rem);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.pill:hover { border-color: #fff; color: #fff; }
+.pill.on { background: #fff; border-color: #fff; color: #000; }
+
+.tog { position: relative; width: 48px; height: 26px; cursor: pointer; flex-shrink: 0; }
+.tog input { position: absolute; opacity: 0; width: 0; height: 0; }
+.tog-track {
+  position: absolute; inset: 0; border-radius: 999px;
+  background: #1c1c1c; border: 1px solid #2a2a2a;
+  transition: background .2s, border-color .2s;
+}
+.tog input:checked + .tog-track { background: #fff; border-color: #fff; }
+.tog-knob {
+  position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #3a3a3a; transition: transform .2s, background .2s;
+}
+.tog input:checked ~ .tog-knob { transform: translateX(22px); background: #000; }
+.tog-lbl {
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  font-size: clamp(0.75rem, 3vw, 0.9rem);
+  color: #fff; min-width: 2.4rem; text-align: right;
+}
+
+#speakBtn {
+  width: 100%; padding: 0.8rem;
+  border: 1px solid #fff; background: #000; color: #fff;
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  font-size: clamp(0.8rem, 3vw, 0.95rem);
+  letter-spacing: 0.12em; cursor: pointer; border-radius: 3px;
+  transition: all .12s;
+}
+#speakBtn:hover { background: #fff; color: #000; }
+#speakBtn:active { opacity: .6; }
+
+#status {
+  text-align: center;
+  font-size: clamp(0.62rem, 2.5vw, 0.78rem);
+  color: #2a2a2a; min-height: 1rem; letter-spacing: 0.06em;
+  transition: color .3s;
+}
+#status.on  { color: #666; }
+#status.spk { color: #fff; }
+#status.err { color: #c55; }
+
+#credit {
+  text-align: center;
+  font-size: 0.62rem;
+  color: #333;
+  letter-spacing: 0.06em;
+  padding: 0 6vw 10vw;
+}
+
+#scrollHint {
+  display: none;
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  color: #333;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  animation: fadeHint 3s ease forwards;
+}
+@keyframes fadeHint {
+  0%   { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (orientation: landscape) {
+  #scrollHint { display: block; }
+}
+</style>
+</head>
+<body>
+
+<audio id="bgm" loop preload="auto" style="display:none"></audio>
+
+<div id="forceBg"></div>
+
+<div id="clock">
+  <div id="timeDisplay">00:00</div>
+  <div id="secDisplay">:00</div>
+  <div id="dateDisplay">—</div>
+</div>
+
+<hr class="divider">
+
+<div id="controls">
+  <div class="row">
+    <span class="lbl">自動読み上げ</span>
+    <div style="display:flex;align-items:center;gap:.6rem">
+      <label class="tog">
+        <input type="checkbox" id="autoTog">
+        <div class="tog-track"></div>
+        <div class="tog-knob"></div>
+      </label>
+      <span class="tog-lbl" id="togLbl">OFF</span>
+    </div>
+  </div>
+
+  <div class="row">
+    <span class="lbl">読み上げ間隔</span>
+    <div class="pills">
+      <button class="pill" data-min="1">1分</button>
+      <button class="pill" data-min="5">5分</button>
+      <button class="pill on" data-min="15">15分</button>
+      <button class="pill" data-min="30">30分</button>
+      <button class="pill" data-min="60">1時間</button>
+    </div>
+  </div>
+
+  <button id="speakBtn">今すぐ読み上げ</button>
+  <div id="status">—</div>
+</div>
+
+<div id="credit">音声：VOICEVOX:青山龍星</div>
+
+<div id="scrollHint">↓ スクロールで設定</div>
+
+<script>
+document.documentElement.style.background = '#000';
+document.body.style.background = '#000';
+
+const timeEl   = document.getElementById('timeDisplay');
+const secEl    = document.getElementById('secDisplay');
+const dateEl   = document.getElementById('dateDisplay');
+const autoTog  = document.getElementById('autoTog');
+const togLbl   = document.getElementById('togLbl');
+const speakBtn = document.getElementById('speakBtn');
+const statusEl = document.getElementById('status');
+const bgm      = document.getElementById('bgm');
+const DAYS     = ['日','月','火','水','木','金','土'];
+
+let ivMin  = 15;
+let autoOn = false;
+
+// ============================================================
+// 【デバイス判定】PC版とスマホ版でBGMファイルを切り替える
+// ============================================================
+function initAudioSrc() {
+  if (!bgm) return;
+  const isMobile = window.innerWidth < 768 || ('ontouchstart' in window);
+  bgm.src = isMobile ? "bgm_sp.mp3" : "bgm.mp3";
+}
+initAudioSrc();
+// ============================================================
+
+function startBgAudio() {
+  if (!bgm) return;
+  bgm.play().catch(() => {});
+}
+
+function stopBgAudio() {
+  if (!bgm) return;
+  bgm.pause();
+  bgm.currentTime = 0;
+}
+
+function fitText() {
+  const parent = document.getElementById('clock');
+  const maxW = parent.clientWidth * 0.97;
+  const maxH = parent.clientHeight * 0.52;
+  let lo = 10, hi = 800;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) / 2;
+    timeEl.style.fontSize = mid + 'px';
+    (timeEl.scrollWidth <= maxW && timeEl.offsetHeight <= maxH) ? (lo = mid) : (hi = mid);
+  }
+  timeEl.style.fontSize = lo + 'px';
+  secEl.style.fontSize  = (lo * 0.30) + 'px';
+}
+
+// ============================================================
+// 音声ファイル方式の読み上げ（Web Audio で先行予約）
+//   画面ロック中はJavaScriptが止まるため、
+//   今後の読み上げをあらかじめ AudioContext に予約しておく
+// ============================================================
+const VOICE_DIR   = 'voices/';
+const HORIZON_MAX = 12 * 3600 * 1000;  // 先行予約の最大長（12時間）
+const MAX_EVENTS  = 200;               // 先行予約の最大件数
+const GAP_SEC     = 0.04;              // 音声間の隙間
+
+let ctx = null;
+let master = null;
+let buffers = {};
+let voicesLoaded = false;
+let loadingPromise = null;
+
+let scheduled = [];       // 予約済みのAudioBufferSource
+let scheduledUntil = 0;   // ここまで予約済み（epoch ms）
+let baseMs = 0;           // 予約の基準（壁時計）
+let baseCtx = 0;          // 予約の基準（AudioContext時計）
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function voiceNames() {
+  const names = ['jodo', 'desu'];
+  for (let h = 1; h <= 12; h++) names.push('h' + pad2(h));
+  for (let m = 1; m <= 59; m++) names.push('m' + pad2(m));
+  return names;
+}
+
+function ensureContext() {
+  // ユーザー操作の中で同期的に呼ぶこと（iOSの制約）
+  if (!ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = 1.0;
+    master.connect(ctx.destination);
+    ctx.onstatechange = () => {
+      if (ctx.state !== 'running' && autoOn) ctx.resume().catch(() => {});
+    };
+  }
+  if (ctx.state !== 'running') ctx.resume().catch(() => {});
+  return true;
+}
+
+function loadVoices() {
+  if (voicesLoaded) return Promise.resolve(true);
+  if (loadingPromise) return loadingPromise;
+  const names = voiceNames();
+  let done = 0;
+  loadingPromise = Promise.all(names.map(async (n) => {
+    const res = await fetch(VOICE_DIR + n + '.wav');
+    if (!res.ok) throw new Error(n);
+    const ab = await res.arrayBuffer();
+    buffers[n] = await ctx.decodeAudioData(ab);
+    done++;
+    statusEl.textContent = `音声読み込み中… ${done}/${names.length}`;
+    statusEl.className = 'on';
+  })).then(() => {
+    voicesLoaded = true;
+    return true;
+  }).catch(() => {
+    loadingPromise = null;
+    return false;
+  });
+  return loadingPromise;
+}
+
+function phraseNames(d) {
+  const h12 = (d.getHours() % 12) || 12;
+  const m = d.getMinutes();
+  if (m === 0) return ['h' + pad2(h12), 'jodo'];
+  return ['h' + pad2(h12), 'm' + pad2(m), 'desu'];
+}
+
+// 指定時刻から音声を連結して再生予約し、使ったソースを返す
+function playPhrase(startTime, d) {
+  const out = [];
+  let t = startTime;
+  for (const n of phraseNames(d)) {
+    const buf = buffers[n];
+    if (!buf) continue;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(master);
+    src.start(t);
+    out.push(src);
+    t += buf.duration + GAP_SEC;
+  }
+  return out;
+}
+
+function stopScheduled() {
+  scheduled.forEach(s => { try { s.stop(); } catch (e) {} });
+  scheduled = [];
+  scheduledUntil = 0;
+}
+
+function topUp() {
+  if (!autoOn || !ctx || !voicesLoaded) return;
+  const nowMs = Date.now();
+  const horizon = Math.min(HORIZON_MAX, MAX_EVENTS * ivMin * 60000);
+  const target = nowMs + horizon;
+  if (scheduledUntil >= target - horizon / 2) return;  // まだ十分先まで予約済み
+
+  let next = Math.floor(Math.max(scheduledUntil, nowMs) / 60000) * 60000 + 60000;
+  while (next <= target) {
+    const d = new Date(next);
+    if (d.getMinutes() % ivMin === 0) {
+      const startCtx = baseCtx + (next - baseMs) / 1000;
+      if (startCtx > ctx.currentTime) {
+        scheduled.push(...playPhrase(startCtx, d));
+      }
+    }
+    next += 60000;
+  }
+  scheduledUntil = target;
+}
+
+function rescheduleAll() {
+  if (!autoOn || !ctx || !voicesLoaded) return;
+  stopScheduled();
+  baseMs = Date.now();
+  baseCtx = ctx.currentTime;
+  topUp();
+  refreshStatus();
+}
+
+// 壁時計とAudioContext時計のずれ（ロック中の停止など）を検知
+function checkDrift() {
+  if (!autoOn || !ctx || !voicesLoaded || !scheduledUntil) return;
+  const wall = (Date.now() - baseMs) / 1000;
+  const aud  = ctx.currentTime - baseCtx;
+  if (Math.abs(wall - aud) > 1) rescheduleAll();
+}
+
+// 「今すぐ読み上げ」
+async function speakNow() {
+  if (!ensureContext()) return;
+  const ok = await loadVoices();
+  if (!ok) {
+    // 音声ファイルが無い場合のみ端末の音声合成で代替
+    fallbackSpeak(new Date());
+    return;
+  }
+  const d = new Date();
+  statusEl.textContent = '読み上げ中…';
+  statusEl.className = 'spk';
+  playPhrase(ctx.currentTime + 0.05, d);
+  setTimeout(refreshStatus, 3000);
+}
+
+function fallbackSpeak(d) {
+  if (!window.speechSynthesis) return;
+  const h = (d.getHours() % 12) || 12;
+  const m = d.getMinutes();
+  const u = new SpeechSynthesisUtterance(
+    m === 0 ? `${h}時ちょうどです` : `${h}時${m}分です`
+  );
+  u.lang = 'ja-JP';
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+  statusEl.textContent = '音声ファイルが読み込めないため端末の音声で読み上げ';
+  statusEl.className = 'err';
+}
+
+function nextTime(now) {
+  const tot = now.getHours() * 60 + now.getMinutes();
+  const nxt = Math.ceil((tot + 1) / ivMin) * ivMin;
+  return { h: Math.floor(nxt / 60) % 24, m: nxt % 60 };
+}
+
+function refreshStatus() {
+  if (!autoOn) { statusEl.textContent = '—'; statusEl.className = ''; return; }
+  const { h, m } = nextTime(new Date());
+  statusEl.textContent =
+    `次の読み上げ: ${pad2(h)}:${pad2(m)}（予約済み）`;
+  statusEl.className = 'on';
+}
+
+// ------------------------------------------------------------
+// 毎秒処理（表示更新＋予約の維持）
+// ------------------------------------------------------------
+function tick() {
+  const now = new Date();
+  if (document.visibilityState === 'visible') {
+    timeEl.textContent = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    secEl.textContent  = ':' + pad2(now.getSeconds());
+    dateEl.textContent =
+      now.getFullYear() + '年' + (now.getMonth()+1) + '月' +
+      now.getDate() + '日（' + DAYS[now.getDay()] + '）';
+    fitText();
+  }
+  if (autoOn) {
+    checkDrift();
+    topUp();
+  }
+}
+
+// 画面復帰時：BGMとAudioContextを復旧し、予約をやり直す
+function onResume() {
+  if (autoOn) {
+    if (bgm && bgm.paused) bgm.play().catch(() => {});
+    if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+    rescheduleAll();
+  }
+  tick();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') onResume();
+});
+window.addEventListener('pageshow', onResume);
+
+// ------------------------------------------------------------
+// 設定操作
+// ------------------------------------------------------------
+document.querySelectorAll('.pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(q => q.classList.remove('on'));
+    p.classList.add('on');
+    ivMin = +p.dataset.min;
+    rescheduleAll();
+    refreshStatus();
+  });
+});
+
+autoTog.addEventListener('change', async () => {
+  if (autoTog.checked) {
+    autoOn = true;
+    togLbl.textContent = 'ON';
+    // ユーザー操作の中で同期的に準備（iOS対策）
+    const ok = ensureContext();
+    startBgAudio();
+    if (!ok) {
+      autoOn = false; autoTog.checked = false; togLbl.textContent = 'OFF';
+      statusEl.textContent = 'この端末は音声再生に対応していません';
+      statusEl.className = 'err';
+      return;
+    }
+    const loaded = await loadVoices();
+    if (!autoOn) return;  // 読み込み中にOFFにされた場合
+    if (!loaded) {
+      autoOn = false; autoTog.checked = false; togLbl.textContent = 'OFF';
+      stopBgAudio();
+      statusEl.textContent = '音声ファイル(voices/)を読み込めませんでした';
+      statusEl.className = 'err';
+      return;
+    }
+    rescheduleAll();
+  } else {
+    autoOn = false;
+    togLbl.textContent = 'OFF';
+    stopScheduled();
+    stopBgAudio();
+    refreshStatus();
+  }
+});
+
+speakBtn.addEventListener('click', () => { startBgAudio(); speakNow(); });
+window.addEventListener('resize', fitText);
+
+window.addEventListener('orientationchange', () => {
+  const hint = document.getElementById('scrollHint');
+  hint.style.animation = 'none';
+  hint.offsetHeight;
+  hint.style.animation = '';
+  window.scrollTo(0, 0);
+});
+
+// BGM再生中はtimeupdate、常時setIntervalもフォールバックとして併用
+bgm.addEventListener('timeupdate', tick);
+setInterval(tick, 1000);
+tick();
+</script>
+</body>
+</html>
